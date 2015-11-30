@@ -1,0 +1,25 @@
+{
+  "name": "bower_components",
+  "homepage": "https://github.com/sandsfish/consciousness-carving",
+  "authors": [
+    "Sands Fish <sandsfish@gmail.com>"
+  ],
+  "description": "",
+  "main": "",
+  "moduleType": [
+    "node"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "three.js": "threejs#*",
+    "dat-gui": "~0.5.1"
+  }
+}
