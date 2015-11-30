@@ -2,6 +2,9 @@
     <!-- Origin: 
         https://aerotwist.com/tutorials/creating-particles-with-three-js/ 
         https://aerotwist.com/tutorials/getting-started-with-three-js/  -->
+    <!-- CSG.js + Three.js:
+        https://github.com/chandlerprall/ThreeCSG -->
+
 
     <head>
         <!-- <link rel="stylesheet" type="text/css" href="static/main.css"> -->
@@ -16,21 +19,23 @@
     </style>
 
     <div id="container"></div>
-    <script src="/static/bower_components/threejs/build/three.js"></script>
-    <script src="/static/bower_components/threejs/examples/js/Detector.js"></script>
+    <script src="/static/bower_components/three.js/build/three.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/Detector.js"></script>
     
-    <script src="/static/bower_components/threejs/examples/js/shaders/CopyShader.js"></script>
-    <script src="/static/bower_components/threejs/examples/js/shaders/DotScreenShader.js"></script>
-    <script src="/static/bower_components/threejs/examples/js/shaders/RGBShiftShader.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/shaders/DotScreenShader.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/shaders/RGBShiftShader.js"></script>
 
-    <script src="/static/bower_components/threejs/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="/static/bower_components/threejs/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="/static/bower_components/threejs/examples/js/postprocessing/MaskPass.js"></script>
-    <script src="/static/bower_components/threejs/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
 
-    <script src="/static/bower_components/threejs/examples/js/controls/OrbitControls.js"></script>
+    <script src="/static/bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
 
-    <script type="text/javascript" src="/static/dat.gui.min.js"></script>
+    <script src="/static/ThreeCSG/ThreeCSG.js"></script>
+
+    <script type="text/javascript" src="/static/bower_components/dat-gui/build/dat.gui.min.js"></script>
 
     <script type="text/javascript">
     
@@ -73,6 +78,8 @@
         var controls;
         var options;
         var cube;
+        var material;
+        var resultZPos = 0;
 
         init();
         animate();
@@ -113,38 +120,19 @@
 
             // -------------------------------------------------------
 
-            // set up the sphere vars
-            var radius = 50,
-                segments = 32,
-                rings = 16;
 
-            // create the sphere's material
-            var sphereMaterial =
-              new THREE.MeshLambertMaterial(
-                {
-                  color: 0x0055CC,
-                  wireframe: true
-                });
-
-            var sphere = new THREE.Mesh(
-
-              new THREE.SphereGeometry(
-                radius,
-                segments,
-                rings),
-
-              sphereMaterial);
-
-            // add the sphere to the scene
-            scene.add(sphere);
-
-
+            // the monolith
+            // var geometry = new THREE.BoxGeometry( 100, 300, 20 );
+            
+            // carving column 
             var geometry = new THREE.BoxGeometry( 100, 300, 100 );
             // var material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
             
-            var material = new THREE.MeshPhongMaterial( { 
-                    color: 0x156289,
-                    emissive: 0x072534,
+            material = new THREE.MeshPhongMaterial( { 
+                    // color: 0x156289,
+                    color: 0xFFFFFF,
+                    // emissive: 0x072534,
+                    emissive: 0x000000,
                     side: THREE.DoubleSide,
                     shading: THREE.FlatShading } );
 
@@ -153,28 +141,13 @@
             // var options = chooseFromHash( cube );
             scene.add( cube );
 
-
-
-
-            // create a point light
-            // var pointLight =
-            //   new THREE.PointLight(0xFFFFFF);
-
-            // // set its position
-            // pointLight.position.x = 10;
-            // pointLight.position.y = 50;
-            // pointLight.position.z = 130;
-
-            // // add to the scene
-            // scene.add(pointLight);
-
-            var ambientLight = new THREE.AmbientLight( 0x000000 );
+            var ambientLight = new THREE.AmbientLight( 0x222222 );
             scene.add( ambientLight );
 
             var lights = [];
-            lights[0] = new THREE.PointLight( 0xffffff, 1, 0 );
-            lights[1] = new THREE.PointLight( 0xffffff, 1, 0 );
-            lights[2] = new THREE.PointLight( 0xffffff, 1, 0 );
+            lights[0] = new THREE.PointLight( 0xbbbbbb, 1, 0 );
+            lights[1] = new THREE.PointLight( 0xbbbbbb, 1, 0 );
+            lights[2] = new THREE.PointLight( 0xbbbbbb, 1, 0 );
 
             lights[0].position.set( 0, 200, 0 );
             lights[1].position.set( 100, 200, 100 );
@@ -233,14 +206,6 @@
 
             // -------------------------------------------------------
 
-            // scene.add( new THREE.AmbientLight( 0x222222 ) );
-
-            // light = new THREE.DirectionalLight( 0xffffff );
-            // light.position.set( 1, 1, 1 );
-            // scene.add( light );
-
-            // -------------------------------------------------------
-
             renderer = new THREE.WebGLRenderer();
             renderer.setPixelRatio( window.devicePixelRatio );
 
@@ -257,16 +222,12 @@
 
             container.appendChild( renderer.domElement );
 
-            var orbit = new THREE.OrbitControls( camera, renderer.domElement );
-            orbit.enableZoom = false;
-
             controls = new THREE.OrbitControls( camera, renderer.domElement );
-            orbit.enableZoom = true;
             controls.addEventListener( 'change', render );
 
             onWindowResize();
             window.addEventListener( 'resize', onWindowResize, false );
-            window.addEventListener( 'mousemove', onMouseMove, false );
+            document.addEventListener( 'mousedown', onDocumentMouseDown, false );
         }
 
         function onWindowResize( event ) {
@@ -275,9 +236,47 @@
             uniforms.u_resolution.value.y = renderer.domElement.height;
         }
 
-        function onMouseMove( event ) {        
-            uniforms.u_mouse.value.x = event.pageX;
-            uniforms.u_mouse.value.y = event.pageY;
+        function onDocumentMouseDown( event ) {
+
+            // Get unprojected 3D location from mouse click location
+            var vector = new THREE.Vector3();
+            vector.set(
+                ( event.clientX / window.innerWidth ) * 2 - 1,
+                - ( event.clientY / window.innerHeight ) * 2 + 1,
+                1.5 );
+            vector.unproject( camera );
+            var dir = vector.sub( camera.position ).normalize();
+            var distance = - camera.position.z / dir.z;
+            var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+
+            chiselGeometry = new THREE.BoxGeometry( 50, 50, 50 );
+            chisel = new THREE.Mesh( chiselGeometry, material );
+            chisel.position = pos;
+            chisel.position.x = pos.x;
+            // chisel.position.y = camera.position.z;
+
+            var chisel_bsp = new ThreeBSP( chisel );
+            var cube_bsp = new ThreeBSP( cube ); 
+
+            var subtract_bsp = cube_bsp.subtract( chisel_bsp );
+
+            var result = subtract_bsp.toMesh( new THREE.MeshPhongMaterial({ 
+                    shading: THREE.SmoothShading, 
+                    color: 0xFFFFFF,
+                    emissive: 0x000000,
+                    side: THREE.DoubleSide }) );
+            
+            result.geometry.computeVertexNormals();
+            
+            resultZPos -= 100;
+            result.position.z = resultZPos;
+            scene.add( result );
+            
+            // chisel.materials[0].transparent = true;
+            chisel.material.transparent = true;
+            chisel.material.opacity = 0.4;
+            scene.add( chisel );
+            // cube = result;
         }
 
         function update() {
@@ -300,8 +299,7 @@
                   particle.velocity.y = 0;
                 }
 
-                // update the velocity with
-                // a splat of randomniz
+                // update the velocity with a splat of randomniz
                 particle.velocity.y -= Math.random() * pcontrol.gravity;
 
                 // and the position
@@ -314,8 +312,7 @@
                 // }
             }
 
-            // flag to the particle system
-            // that we've changed its vertices.
+            // flag to the particle system that we've changed its vertices.
             particleSystem.geometry.verticesNeedUpdate = true;
 
             requestAnimationFrame( animate );
