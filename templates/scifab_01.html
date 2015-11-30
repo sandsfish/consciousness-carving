@@ -269,14 +269,16 @@
             result.geometry.computeVertexNormals();
             
             resultZPos -= 100;
-            result.position.z = resultZPos;
-            scene.add( result );
+            // result.position.z = resultZPos;
+            scene.remove( cube )
+            // scene.add( result );
             
             // chisel.materials[0].transparent = true;
             chisel.material.transparent = true;
-            chisel.material.opacity = 0.4;
+            chisel.material.opacity = 0.3;
             scene.add( chisel );
-            // cube = result;
+            cube = result;
+            scene.add( cube );
         }
 
         function update() {
