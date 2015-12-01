@@ -9,6 +9,9 @@
         http://stackoverflow.com/questions/23450588/isometric-camera-with-three-js
         
     -->
+    <!-- Javascript Specifics
+        http://stackoverflow.com/questions/122102/what-is-the-most-efficient-way-to-clone-an-object
+    -->
 
     <head>
         <!-- <link rel="stylesheet" type="text/css" href="static/main.css"> -->
@@ -41,6 +44,8 @@
 
     <script type="text/javascript" src="/static/bower_components/dat-gui/build/dat.gui.min.js"></script>
 
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
     <script type="text/javascript">
     
         var ParticleControl = function() {
@@ -50,6 +55,7 @@
 
         var SceneControl = function() {
             this.autoRotate = true;
+            this.chop = false;
         }
 
         var pcontrol = new ParticleControl();
@@ -60,10 +66,14 @@
         
         var rotateController = gui.add(sceneControl, 'autoRotate');
         rotateController.onChange(function(value) {
-            event.stopPropagation();
             controls.autoRotate = !controls.autoRotate;
             return false;
         });
+
+        var chopController = gui.add(sceneControl, 'chop');
+        chopController.onChange(function(value) {
+            chopStone();
+        })
         
     </script>
 
@@ -104,12 +114,14 @@
         var resultZPos = 0;
         
 
-        var chiselCount = 100;
+        var chiselCount = 120;
 
         var stoneWidth = 100;
         var stoneHeight = 300;
         var stoneDepth = 100;
-        var stoneJog = 200;
+        var stoneJog = 0;
+
+        var chop = false;
 
         init();
         animate();
@@ -128,7 +140,7 @@
             // Initial Perscpective from slightly below
             camera.position.x = -449.95185267547294;
             camera.position.y = -273.08175460138847;
-            camera.position.z = -33.881409775674946;
+            camera.position.z = 1200.881409775674946;
             camera.rotation.x = 0.6905414791104114;
             camera.rotation.y = -0.6217289532061265;
             camera.rotation.z = 0.44852765907890246;
@@ -165,6 +177,7 @@
 
 
             cube = new THREE.Mesh( geometry, material );
+            cube.name = "cube";
             scene.add( cube );
 
             addChisels();
@@ -200,6 +213,7 @@
             controls = new THREE.OrbitControls( camera, renderer.domElement );
             controls.addEventListener( 'change', render );
             controls.autoRotate = true;
+            // dat.GUI.toggleHide();
 
             onWindowResize();
             window.addEventListener( 'resize', onWindowResize, false );
@@ -290,6 +304,7 @@
 
             chiselContainer = new THREE.Object3D();
             chiselContainer.position = cube.position;
+            chiselContainer.name = "chisels";
             scene.add( chiselContainer );
 
             // create array to hold chisels
@@ -297,15 +312,16 @@
             //  - randomize positions away from block
             //  - pointing inward
             
-            while(chiselCount--) {
+            // while(chiselCount--) {
+            for(i = 0; i < chiselCount; i++) {
 
-            var pivot = new THREE.Object3D();
-            pivot.rotation.y = ( Math.random() * 360 ) * Math.PI / 180;
-            pivot.rotation.z = ( Math.random() * 360 ) * Math.PI / 180;
-            chiselContainer.add( pivot );
+                var pivot = new THREE.Object3D();
+                pivot.rotation.y = ( Math.random() * 360 ) * Math.PI / 180;
+                pivot.rotation.z = ( Math.random() * 360 ) * Math.PI / 180;
+                chiselContainer.add( pivot );
 
                 // TODO: Add chisel-specific material to use below
-                chiselGeometry = new THREE.BoxGeometry( 50, 10, 5 );
+                chiselGeometry = new THREE.BoxGeometry( 50, 50, 50 );
                 chisel = new THREE.Mesh( chiselGeometry, chiselMaterial );
                 chisel.position = cube.position;
 
@@ -314,7 +330,12 @@
 
                 // chisel.position.y = cube.position + (Math.random() * stoneHeight);
                 chisel.translateY( Math.random() * stoneHeight );
-
+                
+                chisel.lookAt( cube.position );
+                
+//  Do we need this, if the block isn't getting chopped for some other reason?
+                chisel.translateZ( - 100 );
+                
                 pivot.add( chisel );
             }
         }
@@ -374,13 +395,71 @@
 
         }
 
+
+
+        function chopStone() {
+
+            var chisels = scene.getObjectByName( "chisels" );
+            var stone = scene.getObjectByName( "cube" );
+
+            for(i = 0; i < chiselCount; i++) {
+
+                chisel = chisels.children[i].children[0];
+                var chisel_bsp = new ThreeBSP( chisel );
+                var cube_bsp = new ThreeBSP( stone ); 
+
+                var subtract_bsp = cube_bsp.subtract( chisel_bsp );
+
+                var result = subtract_bsp.toMesh( new THREE.MeshPhongMaterial({ 
+                        shading: THREE.SmoothShading, 
+                        color: 0xFFFFFF,
+                        emissive: 0x000000,
+                        side: THREE.DoubleSide }) );
+
+                result.geometry.computeVertexNormals();
+                
+                scene.remove( stone );
+                result.name = "cube";
+                scene.add( result );
+                
+                // chisel.materials[0].transparent = true;
+                chisel.material.transparent = true;
+                chisel.material.opacity = 0.0;
+                // scene.add( chisel );
+                
+                // cube = jQuery.extend(true, {}, oldObject);
+                // cube = result;
+                // scene.add( cube );
+                // cube.verticesNeedUpdate = true;
+            }
+
+            chop = false;
+        }
+
         function animate() {
 
             controls.update();
+            camera.position.z += 5;
+            // camera.position.y -= 0.5;
+            // console.log(scene.children.length);
 
-            // while( chiselCount-- ) {
+            var chisels = scene.getObjectByName( "chisels" );
 
-            // }
+            for(i = 0; i < chiselCount; i++) {
+
+                if( chisels.children[i].children[0].scale.x > 0.9 ) {
+                    chisels.children[i].children[0].scale.x -= 0.0005;
+                }
+                
+                if( chisels.children[i].children[0].scale.y < 50 ) {
+                    chisels.children[i].children[0].scale.y += (0.005 + Math.random()*2);
+                }
+
+                chisels.children[i].verticesNeedUpdate = true;
+                // scene.children[1].children[i].updateMatrix();
+                // scene.children[1].children[i].applyMatrix( mesh.matrix );
+                // scene.children[1].children[i].matrix.identity();
+            }
 
             if(particleSystemInit) {
                 var pCount = particleCount;
